@@ -53,6 +53,52 @@ services:
       - monitoring
     restart: always
     <<: *logging_settings
+
+  telegraf-metric:
+    image: telegraf:1.27-alpine
+    container_name: telegraf-metric
+    ports:
+      - "8080:8080"
+      - "9273:9273"
+    environment:
+      - OUTPUT_METRIC_USER=${TELEGRAF_OUTPUT_METRIC_USER:-admin}
+      - OUTPUT_METRIC_PASSWORD=${TELEGRAF_OUTPUT_METRIC_PASSWORD:-dev@123}
+      - INPUT_INFLUX_USER=${TELEGRAF_INPUT_INFLUX_USER:-admin}
+      - INPUT_INFLUX_PASSWORD=${TELEGRAF_INPUT_INFLUX_PASSWORD:-dev@123}
+      - HOSTNAME=${TELEGRAF_HOSTNAME:-telegraf-polling-service}
+    volumes:
+      - ./telegraf-metric/telegraf.conf:/etc/telegraf/telegraf.conf
+    networks:
+      - monitoring
+    restart: always
+    <<: *logging_settings
+
+
+  telegraf-reporter:
+    container_name: telegraf-reporter
+    image: telegraf:1.27.4
+    environment:
+      - HOST_ETC=/hostfs/etc
+      - HOST_PROC=/hostfs/proc
+      - HOST_SYS=/hostfs/sys
+      - HOST_VAR=/hostfs/var
+      - HOST_RUN=/hostfs/run
+      - HOST_MNT=/hostfs/mnt
+      - HOST_MOUNT_PREFIX=/hostfs
+      - SERIAL=grab
+      - INPUT_INFLUX_USER=${TELEGRAF_INPUT_INFLUX_PASSWORD:-dev@123}
+      - INPUT_INFLUX_PASSWORD=${TELEGRAF_INPUT_INFLUX_PASSWORD:-dev@123}
+    volumes:
+      - ./telegraf-reporter/telegraf.conf:/etc/telegraf/telegraf.conf
+      - /:/hostfs:ro
+      - /mnt:/mnt
+    ports:
+      - 19273:19273
+    restart: always
+    <<: *logging_settings
+
+
+
 networks:
   monitoring:
     driver: bridge
